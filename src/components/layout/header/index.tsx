@@ -3,20 +3,20 @@ import { getScopedI18n } from "@/locales/server";
 import Navbar from "./navbar";
 
 export default async function Header() {
-    const { session } = await getCurrentSession();
+    const { user } = await getCurrentSession();
     const scopedT = await getScopedI18n("header");
     const headerText = {
         projects: scopedT("projects"),
         freelancers: scopedT("freelancers"),
         login: scopedT("login"),
         account: scopedT("account"),
-        openMenu: scopedT("openMenu"),
+        about: scopedT("about"),
     };
 
     return (
         <header className="h-20 w-full">
-            <div className="container h-full">
-                <Navbar headerText={headerText} session={session!} />
+            <div className="container h-full mx-auto px-4">
+                <Navbar headerText={headerText} user={user} />
             </div>
         </header>
     );

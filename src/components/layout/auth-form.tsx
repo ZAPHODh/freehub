@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { LoaderCircle } from "lucide-react";
 import Icons from "../shared/icons";
+import { useScopedI18n } from "@/locales/client";
 
 const userAuthSchema = z.object({
     email: z.string().email("Please enter a valid email address."),
@@ -22,6 +23,7 @@ const userAuthSchema = z.object({
 type FormData = z.infer<typeof userAuthSchema>;
 
 export default function AuthForm() {
+    const t = useScopedI18n('auth')
     const [currentStep, setCurrentStep] = useState(1);
     const [isLoading, setIsLoading] = useState(false);
     const [isGithubLoading, setIsGithubLoading] = useState(false);
@@ -136,7 +138,7 @@ export default function AuthForm() {
                                 </Label>
                                 <Input
                                     id="email"
-                                    placeholder="name@example.com"
+                                    placeholder={t("emailPlaceholder")}
                                     type="email"
                                     disabled={isLoading || isGithubLoading}
                                     {...register("email")}
@@ -155,7 +157,7 @@ export default function AuthForm() {
                                 {isLoading && (
                                     <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
                                 )}
-                                Send OTP
+                                {t("sendOtp")}
                             </button>
                         </div>
                     </form>
@@ -172,7 +174,7 @@ export default function AuthForm() {
                             className={cn(buttonVariants({ variant: "outline" }))}
                             onClick={() => setIsGithubLoading(true)}
                         >
-                            Continue with <Icons.gitHub className="ml-2 h-4 w-4" />
+                            {t("continueWith")} <Icons.gitHub className="ml-2 h-4 w-4" />
                         </Link>
                     )}
                     {isGoogleLoading ? (
@@ -185,7 +187,7 @@ export default function AuthForm() {
                             className={cn(buttonVariants({ variant: "outline" }))}
                             onClick={() => setIsGoogleLoading(true)}
                         >
-                            Continue with <Icons.google className="ml-2 h-4 w-4" />
+                            {t("continueWith")} <Icons.google className="ml-2 h-4 w-4" />
                         </Link>
                     )}
                 </>
@@ -194,9 +196,9 @@ export default function AuthForm() {
                 <>
                     <p className="mb-4 text-center">
                         <span className="break-all">
-                            We&apos;ve sent a 6-digit code to {getValues("email")}.
+                            {t("otpSentTo", { email: getValues("email") })}
                         </span>{" "}
-                        Please enter it below for verification.
+                        {t("verifyDesc")}
                     </p>
                     <form
                         onSubmit={handleSubmit(onOTPSubmit)}
@@ -235,13 +237,13 @@ export default function AuthForm() {
                             {isVerifying && (
                                 <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
                             )}
-                            Verify OTP
+                            {t("verifyOtp")}
                         </Button>
                     </form>
                     <div className="mt-4 flex items-center justify-between text-sm text-gray-600">
-                        <span>Didn&apos;t receive the code/expired?</span>
+                        <span>{t("didNotReceive")}</span>
                         {countdown > 0 ? (
-                            <span>Resend in {countdown}s</span>
+                            <span>{t("resendIn", { countdown })}</span>
                         ) : (
                             <Button
                                 variant="link"
@@ -249,7 +251,7 @@ export default function AuthForm() {
                                 className="h-auto p-0"
                                 disabled={isLoading}
                             >
-                                {isLoading ? "Resending..." : "Resend"}
+                                {isLoading ? t("resending") : t("resend")}
                             </Button>
                         )}
                     </div>

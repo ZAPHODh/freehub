@@ -16,7 +16,7 @@ export default function LoginModal() {
     const IsOpen = pathname.includes("/login");
     return (
         <Dialog open={IsOpen} onOpenChange={() => router.back()}>
-            <DialogContent className="w-full max-w-[400px] rounded-md">
+            <DialogContent className="w-full max-w-[400px] rounded-md md:mx-auto">
                 <DialogHeader>
                     <DialogTitle asChild>
                         <h2 className="font-semibold tracking-tight transition-colors">

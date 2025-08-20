@@ -128,12 +128,11 @@ export default async function RootLayout({
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <I18nProviderClient locale={locale}>
             <Header />
+            <main>
+              {children}
+              {loginDialog}
+            </main>
           </I18nProviderClient>
-          <main>
-            {children}
-            {loginDialog}
-          </main>
-
           <Toaster />
         </ThemeProvider>
       </body>

@@ -31,7 +31,7 @@ export const sendOTP = async ({ toMail, code, userName }: SendOTPProps) => {
     const temp = VerificationTemp({ userName, code }) as ReactNode;
 
     await resend.emails.send({
-        from: `Free lance <luispaulo.ni@gmail.com>`,
+        from: `Free lance <no-reply@resend.dev>`,
         to: toMail,
         subject: subject,
         headers: {
@@ -40,4 +40,5 @@ export const sendOTP = async ({ toMail, code, userName }: SendOTPProps) => {
         react: temp,
         text: "",
     });
+
 };

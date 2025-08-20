@@ -1,107 +1,233 @@
-"use client";
+"use client"
 
-import { Session } from "@prisma/client";
-import { MenuIcon } from "lucide-react";
-import Image from "next/image";
-import Link from "next/link";
-import { useState } from "react";
-import LogoutButton from "@/components/shared/logout-button";
-import { buttonVariants } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { cn } from "@/lib/utils";
-export default function Navbar({
-    session,
-    headerText,
-}: {
-    session: Session;
+import { useState } from "react"
+import { Button } from "@/components/ui/button"
+import { Plus, Menu, X, User as UserIcon, Settings, LogOut, Bell, MessageSquare } from "lucide-react"
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Badge } from "@/components/ui/badge"
+import Link from "next/link"
+import { User } from "@prisma/client"
+import LogoutButton from "@/components/shared/logout-button"
+import { getInitials } from "@/lib/utils"
+import { logout } from "@/app/[locale]/actions"
+
+interface NavbarProps {
+    user: User | null
     headerText: {
-        projects: string;
-        freelancers: string;
-        login: string;
-        account: string;
-        openMenu: string;
-    };
-}) {
-    const [isModalOpen, setIsModalOpen] = useState(false);
+        projects: string,
+        freelancers: string,
+        login: string
+        account: string
+        about: string
+    }
+}
+
+export default function Navbar({ user, headerText }: NavbarProps) {
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+
+
+
     return (
         <nav className="flex h-full items-center justify-between">
-            <Link href="/" className="flex items-center text-2xl font-bold">
-                <Image
-                    src="/chad-next.png"
-                    alt="ChadNext logo"
-                    width="30"
-                    height="30"
-                    className="mr-2 rounded-sm object-contain"
-                />
-                <p>FreelancerHub</p>
-            </Link>
-            <div className="hidden items-center gap-12 lg:flex 2xl:gap-16">
-                <div className="space-x-4 text-center text-sm leading-loose text-muted-foreground md:text-left">
-                    <Link
-                        href="/projects"
-                        className="font-semibold hover:underline hover:underline-offset-4"
-                    >
+            <div className="flex items-center gap-4">
+                <Link href="/" className="text-2xl font-bold text-foreground">
+                    FreeHub
+                </Link>
+
+
+                <div className="hidden md:flex items-center gap-6">
+                    <Link href="/" className="text-foreground hover:text-primary transition-colors">
                         {headerText.projects}
                     </Link>
-                    <Link
-                        href="/freelancers"
-                        className="font-semibold hover:underline hover:underline-offset-4"
-                    >
+                    <Link href="#" className="text-muted-foreground hover:text-foreground transition-colors">
                         {headerText.freelancers}
                     </Link>
-                </div>
-                <div className="flex items-center gap-x-2">
-                    {session ? (
-                        <Link
-                            href="/account"
-                            className={cn(
-                                buttonVariants({ variant: "outline" }),
-                                "bg-secondary"
-                            )}
-                            onClick={() => setIsModalOpen(false)}
-                        >
-                            {headerText.account}
-                        </Link>
-                    ) : (
-                        <Link href="/login" className={buttonVariants()}>
-                            {headerText.login}
-                        </Link>
-                    )}
+                    <Link href="#" className="text-muted-foreground hover:text-foreground transition-colors">
+                        {headerText.about}
+                    </Link>
                 </div>
             </div>
-            <Sheet open={isModalOpen} onOpenChange={setIsModalOpen}>
-                <SheetTrigger className="lg:hidden">
-                    <span className="sr-only">{headerText.openMenu}</span>
-                    <MenuIcon />
-                </SheetTrigger>
-                <SheetContent>
-                    <div className="flex flex-col items-center space-y-10 py-10">
-                        <div className="space-y-4 text-center text-sm leading-loose text-muted-foreground">
 
-                            {session ? (
-                                <>
-                                    <Link
-                                        href="/account"
-                                        className="block font-semibold hover:underline hover:underline-offset-4"
-                                        onClick={() => setIsModalOpen(false)}
-                                    >
-                                        {headerText.account}
-                                    </Link>
-                                    <LogoutButton className="!mt-20" />
-                                </>
-                            ) : (
-                                <Link
-                                    href="/login"
-                                    className={buttonVariants()}
-                                    onClick={() => setIsModalOpen(false)}
-                                >
-                                    {headerText.login}
-                                </Link>
-                            )}
-                        </div>
+            {user ? (
+                <div className="hidden md:flex items-center gap-3">
+                    <Button variant="ghost" size="sm" className="relative">
+                        <Bell className="w-4 h-4" />
+                        {1 > 0 && (
+                            <Badge
+                                variant="destructive"
+                                className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center text-xs p-0"
+                            >
+                                {1}
+                            </Badge>
+                        )}
+                    </Button>
+
+                    <Button variant="ghost" size="sm">
+                        <MessageSquare className="w-4 h-4" />
+                    </Button>
+
+
+
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                                <Avatar className="h-8 w-8">
+                                    <AvatarImage src={user.picture || "/placeholder.svg"} alt={user.name || 'user'} />
+                                    <AvatarFallback>
+                                        {user.name ? getInitials(user.name, 2) : getInitials(user.email ?? "", 2)}
+                                    </AvatarFallback>
+                                </Avatar>
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="w-56" align="end" forceMount>
+                            <DropdownMenuLabel className="font-normal">
+                                <div className="flex flex-col space-y-1">
+                                    <p className="text-sm font-medium leading-none">{user.name}</p>
+                                    <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
+                                </div>
+                            </DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem>
+                                <UserIcon className="mr-2 h-4 w-4" />
+                                <span>Perfil</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>
+                                <Settings className="mr-2 h-4 w-4" />
+                                <span>Configurações</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={async () => {
+                                await logout();
+                            }}>
+                                <LogOut className="mr-2 h-4 w-4" />
+                                <span>Sair</span>
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
+            ) : (
+
+                <div className="hidden md:flex items-center gap-3">
+                    <Button variant="outline" asChild>
+                        <Link href="/login">
+                            {headerText.login}
+                        </Link>
+                    </Button>
+                </div>
+            )}
+            <button
+                className="md:hidden p-2 hover:bg-accent rounded-md transition-colors"
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                aria-label="Toggle menu"
+            >
+                {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
+
+            {isMobileMenuOpen && (
+                <div className="absolute top-20 left-0 right-0 bg-card border-b shadow-lg md:hidden">
+                    <div className="container mx-auto px-4 py-4">
+                        <nav className="flex flex-col gap-4">
+                            <Link
+                                href="/"
+                                className="text-foreground hover:text-primary transition-colors py-2"
+                                onClick={() => setIsMobileMenuOpen(false)}
+                            >
+                                {headerText.projects}
+                            </Link>
+                            <Link
+                                href="#"
+                                className="text-muted-foreground hover:text-foreground transition-colors py-2"
+                                onClick={() => setIsMobileMenuOpen(false)}
+                            >
+                                {headerText.freelancers}
+                            </Link>
+                            <Link
+                                href="#"
+                                className="text-muted-foreground hover:text-foreground transition-colors py-2"
+                                onClick={() => setIsMobileMenuOpen(false)}
+                            >
+                                {headerText.about}
+                            </Link>
+
+                            <div className="flex flex-col gap-3 mt-4 pt-4 border-t border-border">
+                                {user ? (
+                                    <>
+                                        <div className="flex items-center gap-3 py-2">
+                                            <Avatar className="h-8 w-8">
+                                                <AvatarImage src={user.picture as string} alt={user.name || "User"} />
+                                                <AvatarFallback>
+                                                    {user.name ? getInitials(user.name, 2) : getInitials(user.email ?? "", 2)}
+                                                </AvatarFallback>
+                                            </Avatar>
+                                            <div className="flex-1">
+                                                <p className="text-sm font-medium">{user.name}</p>
+                                                <p className="text-xs text-muted-foreground">{user.email}</p>
+                                            </div>
+                                        </div>
+
+                                        {/* <Button variant="ghost" className="w-full justify-start">
+                                            <Bell className="w-4 h-4 mr-2" />
+                                            Notificações
+                                            {user.notifications > 0 && (
+                                                <Badge variant="destructive" className="ml-auto">
+                                                    {user.notifications}
+                                                </Badge>
+                                            )}
+                                        </Button> */}
+
+                                        {/* <Button variant="ghost" className="w-full justify-start">
+                                            <MessageSquare className="w-4 h-4 mr-2" />
+                                            Mensagens
+                                        </Button>
+
+                                        <Button variant="ghost" className="w-full justify-start">
+                                            <UserIcon className="w-4 h-4 mr-2" />
+                                            Perfil
+                                        </Button>
+
+                                        <Button variant="ghost" className="w-full justify-start">
+                                            <Settings className="w-4 h-4 mr-2" />
+                                            Configurações
+                                        </Button>
+
+                                        <Button className="w-full">
+                                            <Plus className="w-4 h-4 mr-2" />
+                                            Postar Projeto
+                                        </Button> */}
+                                        <Button className="w-full" onClick={
+                                            async () => {
+                                                await logout();
+                                            }
+                                        }>
+                                            <LogOut className="mr-2 h-4 w-4" />
+                                            Sair
+                                        </Button> */
+                                    </>
+                                ) : (
+                                    <>
+                                        <Button variant="outline" className="w-full bg-transparent" asChild>
+                                            <Link href="/login">
+
+                                                {headerText.login}
+
+                                            </Link>
+                                        </Button>
+                                    </>
+                                )}
+                            </div>
+                        </nav>
                     </div>
-                </SheetContent>
-            </Sheet>
-        </nav>
-    );
+                </div >
+            )
+            }
+        </nav >
+    )
 }
