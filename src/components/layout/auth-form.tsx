@@ -72,15 +72,15 @@ export default function AuthForm() {
             }
             setCurrentStep(2);
             toast.success(
-                "OTP sent!", {
-                description: "Please check your mail inbox",
+                t('otpSent'), {
+                description: t('otpSentDesc'),
             }
             );
             setCountdown(30);
         } catch (error) {
             const errorMessage =
-                error instanceof Error ? error.message : "Something went wrong";
-            toast.error("Failed to send OTP", {
+                error instanceof Error ? error.message : t('otpFailed');
+            toast.error(t('otpFailed'), {
                 description: errorMessage,
             });
         } finally {
@@ -104,14 +104,14 @@ export default function AuthForm() {
             setCountdown(0);
             reset();
             toast.success(
-                "Successfully verified!"
+                t('verifiedSuccess')
             );
             window.location.href = "/account";
         } catch (error) {
             const errorMessage =
                 error instanceof Error ? error.message : "Something went wrong";
             toast.error(
-                "Failed to verify OTP", {
+                t('verifyFailed'), {
                 description: errorMessage,
             });
         } finally {
@@ -206,7 +206,7 @@ export default function AuthForm() {
                     >
                         <div>
                             <Label className="sr-only" htmlFor="otp">
-                                Enter OTP
+                                {t('enterOtp')}
                             </Label>
                             <div className="">
                                 <InputOTP

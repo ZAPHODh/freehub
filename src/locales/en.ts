@@ -5,6 +5,9 @@ export default {
         login: "Login",
         account: "Account",
         about: "About",
+        profile: 'Profile',
+        settings: 'Settings',
+        out: 'Out'
     },
     auth: {
         emailPlaceholder: "name@example.com",
@@ -13,6 +16,7 @@ export default {
         otpSent: "OTP sent!",
         otpSentDesc: "Please check your mail inbox",
         otpFailed: "Failed to send OTP",
+        enterOtp: 'Enter OTP',
         verifyOtp: "Verify OTP",
         verifiedSuccess: "Successfully verified!",
         verifyFailed: "Failed to verify OTP",
@@ -23,5 +27,19 @@ export default {
         resendIn: "Resend in {countdown}s",
         resend: "Resend",
         resending: "Resending..."
+
+
+    },
+    shared: {
+        goBack: 'Go Back',
+        locales: {
+            portuguese: 'Portuguese',
+            english: 'English'
+        },
+        changeLocale: 'Change Locale',
+        logout: 'Log out',
+        toggleTheme: 'Toggle Theme',
+        light: 'Light',
+        dark: 'Dark'
     }
 } as const;

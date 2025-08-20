@@ -5,6 +5,9 @@ export default {
         login: "Entrar",
         account: "Conta",
         about: "Sobre",
+        profile: 'Perfil',
+        settings: 'Configurações',
+        out: 'Sair'
     },
     auth: {
         emailPlaceholder: "nome@exemplo.com",
@@ -13,6 +16,7 @@ export default {
         otpSent: "Código enviado!",
         otpSentDesc: "Verifique sua caixa de entrada",
         otpFailed: "Falha ao enviar o código",
+        enterOtp: 'Digite o código',
         verifyOtp: "Verificar código",
         verifiedSuccess: "Verificado com sucesso!",
         verifyFailed: "Falha ao verificar o código",
@@ -23,5 +27,14 @@ export default {
         resendIn: "Reenviar em {countdown}s",
         resend: "Reenviar",
         resending: "Reenviando..."
+    },
+    shared: {
+        goBack: 'Voltar',
+        locales: {
+            portuguese: "Português",
+            english: "Inglês"
+        },
+        changeLocale: 'Mudar Localização',
+        logout: 'Sair'
     }
 } as const;

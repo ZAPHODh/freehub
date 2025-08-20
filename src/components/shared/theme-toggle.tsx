@@ -10,10 +10,11 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Laptop, Moon, Sun } from "lucide-react";
+import { useScopedI18n } from "@/locales/client";
 
 export default function ThemeToggle() {
     const { setTheme } = useTheme();
-
+    const scopedT = useScopedI18n('shared')
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>

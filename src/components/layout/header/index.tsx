@@ -11,6 +11,9 @@ export default async function Header() {
         login: scopedT("login"),
         account: scopedT("account"),
         about: scopedT("about"),
+        out: scopedT('out'),
+        settings: scopedT('settings'),
+        profile: scopedT('profile')
     };
 
     return (

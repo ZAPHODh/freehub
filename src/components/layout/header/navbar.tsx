@@ -27,6 +27,9 @@ interface NavbarProps {
         login: string
         account: string
         about: string
+        out: string,
+        profile: string,
+        settings: string
     }
 }
 
@@ -97,18 +100,18 @@ export default function Navbar({ user, headerText }: NavbarProps) {
                             <DropdownMenuSeparator />
                             <DropdownMenuItem>
                                 <UserIcon className="mr-2 h-4 w-4" />
-                                <span>Perfil</span>
+                                <span>{headerText.profile}</span>
                             </DropdownMenuItem>
                             <DropdownMenuItem>
                                 <Settings className="mr-2 h-4 w-4" />
-                                <span>Configurações</span>
+                                <span>{headerText.settings}</span>
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem onClick={async () => {
                                 await logout();
                             }}>
                                 <LogOut className="mr-2 h-4 w-4" />
-                                <span>Sair</span>
+                                <span>{headerText.out}</span>
                             </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>
