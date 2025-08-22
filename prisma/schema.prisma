@@ -3,8 +3,65 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DB_PRISMA_URL")
+  provider = "postgresql"
+  url      = env("DB_PRISMA_URL")
+}
+
+enum BudgetType {
+  FIXED
+  HOURLY
+}
+
+enum ExperienceLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum ProjectStatus {
+  OPEN
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  CLOSED
+}
+
+enum ProposalStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  WITHDRAWN
+}
+
+enum UserType {
+  CLIENT
+  FREELANCER
+  BOTH
+}
+
+enum ContractStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
+  DISPUTED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum MessageType {
+  TEXT
+  FILE
+  SYSTEM
+}
+
+enum ReviewType {
+  CLIENT_TO_FREELANCER
+  FREELANCER_TO_CLIENT
 }
 
 model Session {
@@ -24,21 +81,446 @@ model EmailVerificationCode {
 }
 
 model User {
-  id                     String                  @id @unique @default(cuid())
-  name                   String?
-  email                  String?                 @unique
-  emailVerified          Boolean?                @default(false)
-  picture                String?
-  githubId               Int?                    @unique
-  googleId               String?                 @unique
-  sessions               Session[]
-  emailVerificationCodes EmailVerificationCode[]
+  id            String   @id @unique @default(cuid())
+  name          String?
+  email         String?  @unique
+  emailVerified Boolean? @default(false)
+  picture       String?
+  bio           String?
+  location      String?
+  website       String?
+  phone         String?
+  userType      UserType @default(BOTH)
+
+  githubId Int?    @unique
+  googleId String? @unique
 
   stripeCustomerId       String?   @unique @map(name: "stripe_customer_id")
+  stripeAccountId        String?   @unique @map(name: "stripe_account_id")
   stripeSubscriptionId   String?   @unique @map(name: "stripe_subscription_id")
   stripePriceId          String?   @map(name: "stripe_price_id")
   stripeCurrentPeriodEnd DateTime? @map(name: "stripe_current_period_end")
 
+  isActive   Boolean @default(true)
+  isVerified Boolean @default(false)
+  timezone   String?
+  language   String  @default("pt")
+
+  sessions               Session[]
+  emailVerificationCodes EmailVerificationCode[]
+  freelancerProfile      FreelancerProfile?
+  clientProfile          ClientProfile?
+
+  projects        Project[]
+  proposals       Proposal[]
+  contracts       Contract[] @relation("FreelancerContracts")
+  clientContracts Contract[] @relation("ClientContracts")
+
+  sentMessages     Message[]                 @relation("SentMessages")
+  receivedMessages Message[]                 @relation("ReceivedMessages")
+  conversations    ConversationParticipant[]
+
+  givenReviews    Review[] @relation("ReviewGiver")
+  receivedReviews Review[] @relation("ReviewReceiver")
+
+  notifications    Notification[]
+  favoriteProjects UserFavoriteProject[]
+  savedFreelancers UserSavedFreelancer[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model FreelancerProfile {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  title        String?
+  hourlyRate   Decimal? @db.Decimal(10, 2)
+  availability String? // "full-time", "part-time", "not-available"
+
+  totalEarnings Decimal @default(0) @db.Decimal(10, 2)
+  completedJobs Int     @default(0)
+  successRate   Decimal @default(0) @db.Decimal(5, 2)
+  averageRating Decimal @default(0) @db.Decimal(3, 2)
+  totalReviews  Int     @default(0)
+
+  skills         FreelancerSkill[]
+  portfolio      PortfolioItem[]
+  education      Education[]
+  workExperience WorkExperience[]
+  certifications Certification[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ClientProfile {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  companyName String?
+  companySize String?
+  industry    String?
+
+  totalSpent     Decimal @default(0) @db.Decimal(10, 2)
+  projectsPosted Int     @default(0)
+  averageRating  Decimal @default(0) @db.Decimal(3, 2)
+  totalReviews   Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Project {
+  id                String     @id @default(cuid())
+  title             String
+  description       String
+  budget            String
+  budgetType        BudgetType
+  minBudget         Decimal?   @db.Decimal(10, 2)
+  maxBudget         Decimal?   @db.Decimal(10, 2)
+  deadline          DateTime?
+  estimatedDuration String?
+
+  category    String
+  subcategory String?
+  tags        String[]
+
+  experienceLevel ExperienceLevel
+  projectType     String
+  skillsRequired  String[]
+  technologies    String[]
+
+  creatorId String
+  user      User   @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+
+  status     ProjectStatus @default(OPEN)
+  proposals  Int           @default(0)
+  views      Int           @default(0)
+  isUrgent   Boolean       @default(false)
+  isFeatured Boolean       @default(false)
+
+  attachments      Attachment[]
+  questions        Question[]
+  projectProposals Proposal[]
+  contracts        Contract[]
+  favorites        UserFavoriteProject[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  postedAt  DateTime  @default(now())
+  closedAt  DateTime?
+}
+
+model Proposal {
+  id           String @id @default(cuid())
+  projectId    String
+  freelancerId String
+
+  // Conteúdo da proposta
+  coverLetter    String
+  proposedBudget Decimal @db.Decimal(10, 2)
+  deliveryTime   Int // em dias
+
+  status ProposalStatus @default(PENDING)
+
+  project     Project              @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  freelancer  User                 @relation(fields: [freelancerId], references: [id], onDelete: Cascade)
+  attachments ProposalAttachment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([projectId, freelancerId])
+}
+
+model ProposalAttachment {
+  id         String @id @default(cuid())
+  proposalId String
+  name       String
+  url        String
+  size       Int
+  mimeType   String
+
+  proposal Proposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+}
+
+model Contract {
+  id           String @id @default(cuid())
+  projectId    String
+  clientId     String
+  freelancerId String
+
+  title       String
+  description String
+  budget      Decimal    @db.Decimal(10, 2)
+  budgetType  BudgetType
+  startDate   DateTime
+  endDate     DateTime?
+
+  status ContractStatus @default(ACTIVE)
+
+  project    Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  client     User    @relation("ClientContracts", fields: [clientId], references: [id], onDelete: Cascade)
+  freelancer User    @relation("FreelancerContracts", fields: [freelancerId], references: [id], onDelete: Cascade)
+
+  milestones  Milestone[]
+  payments    Payment[]
+  timeEntries TimeEntry[]
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  completedAt DateTime?
+}
+
+model Milestone {
+  id          String    @id @default(cuid())
+  contractId  String
+  title       String
+  description String?
+  amount      Decimal   @db.Decimal(10, 2)
+  dueDate     DateTime?
+
+  isCompleted Boolean   @default(false)
+  completedAt DateTime?
+
+  contract Contract  @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  payments Payment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Payment {
+  id          String  @id @default(cuid())
+  contractId  String
+  milestoneId String?
+
+  amount    Decimal @db.Decimal(10, 2)
+  fee       Decimal @default(0) @db.Decimal(10, 2)
+  netAmount Decimal @db.Decimal(10, 2)
+
+  status          PaymentStatus @default(PENDING)
+  stripePaymentId String?
+
+  contract  Contract   @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  milestone Milestone? @relation(fields: [milestoneId], references: [id])
+
+  paidAt    DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Conversation {
+  id         String  @id @default(cuid())
+  projectId  String?
+  contractId String?
+
+  lastMessageAt DateTime @default(now())
+
+  participants ConversationParticipant[]
+  messages     Message[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ConversationParticipant {
+  id             String @id @default(cuid())
+  conversationId String
+  userId         String
+
+  joinedAt   DateTime  @default(now())
+  lastReadAt DateTime?
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, userId])
+}
+
+model Message {
+  id             String @id @default(cuid())
+  conversationId String
+  senderId       String
+  recipientId    String
+
+  content       String
+  messageType   MessageType @default(TEXT)
+  attachmentUrl String?
+
+  isRead Boolean   @default(false)
+  readAt DateTime?
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User         @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  recipient    User         @relation("ReceivedMessages", fields: [recipientId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Review {
+  id         String  @id @default(cuid())
+  projectId  String?
+  contractId String?
+  giverId    String
+  receiverId String
+
+  rating     Int // 1-5
+  comment    String?
+  reviewType ReviewType
+
+  isPublic Boolean @default(true)
+
+  giver    User @relation("ReviewGiver", fields: [giverId], references: [id], onDelete: Cascade)
+  receiver User @relation("ReviewReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([projectId, giverId, receiverId])
+}
+
+model FreelancerSkill {
+  id                  String          @id @default(cuid())
+  freelancerProfileId String
+  name                String
+  level               ExperienceLevel
+  yearsOfExperience   Int?
+
+  freelancerProfile FreelancerProfile @relation(fields: [freelancerProfileId], references: [id], onDelete: Cascade)
+
+  @@unique([freelancerProfileId, name])
+}
+
+model PortfolioItem {
+  id                  String   @id @default(cuid())
+  freelancerProfileId String
+  title               String
+  description         String
+  url                 String?
+  imageUrl            String?
+  technologies        String[]
+
+  freelancerProfile FreelancerProfile @relation(fields: [freelancerProfileId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+}
+
+model Education {
+  id                  String    @id @default(cuid())
+  freelancerProfileId String
+  institution         String
+  degree              String
+  fieldOfStudy        String
+  startDate           DateTime
+  endDate             DateTime?
+  description         String?
+
+  freelancerProfile FreelancerProfile @relation(fields: [freelancerProfileId], references: [id], onDelete: Cascade)
+}
+
+model WorkExperience {
+  id                  String    @id @default(cuid())
+  freelancerProfileId String
+  company             String
+  position            String
+  description         String?
+  startDate           DateTime
+  endDate             DateTime?
+
+  freelancerProfile FreelancerProfile @relation(fields: [freelancerProfileId], references: [id], onDelete: Cascade)
+}
+
+model Certification {
+  id                  String    @id @default(cuid())
+  freelancerProfileId String
+  name                String
+  issuer              String
+  issueDate           DateTime
+  expiryDate          DateTime?
+  credentialUrl       String?
+
+  freelancerProfile FreelancerProfile @relation(fields: [freelancerProfileId], references: [id], onDelete: Cascade)
+}
+
+model TimeEntry {
+  id          String   @id @default(cuid())
+  contractId  String
+  description String
+  startTime   DateTime
+  endTime     DateTime
+  duration    Int // em minutos
+
+  contract Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+}
+
+model UserFavoriteProject {
+  id        String @id @default(cuid())
+  userId    String
+  projectId String
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, projectId])
+}
+
+model UserSavedFreelancer {
+  id           String @id @default(cuid())
+  userId       String
+  freelancerId String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, freelancerId])
+}
+
+model Notification {
+  id      String  @id @default(cuid())
+  userId  String
+  title   String
+  content String
+  type    String
+  isRead  Boolean @default(false)
+  data    Json?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime  @default(now())
+  readAt    DateTime?
+}
+
+model Attachment {
+  id        String  @id @default(cuid())
+  name      String
+  url       String
+  size      Int
+  mimeType  String
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+}
+
+model Question {
+  id        String  @id @default(cuid())
+  question  String
+  answer    String?
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
 }
