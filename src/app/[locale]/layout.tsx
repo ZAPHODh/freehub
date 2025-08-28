@@ -110,10 +110,12 @@ const fontSans = Inter({
 export default async function RootLayout({
   children,
   loginDialog,
+  projectsDialog,
   params,
 }: {
   children: React.ReactNode;
   loginDialog: React.ReactNode;
+  projectsDialog: React.ReactNode
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
@@ -131,6 +133,7 @@ export default async function RootLayout({
             <main>
               {children}
               {loginDialog}
+              {projectsDialog}
             </main>
           </I18nProviderClient>
           <Toaster />
