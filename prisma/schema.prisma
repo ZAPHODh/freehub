@@ -90,7 +90,6 @@ model User {
   location      String?
   website       String?
   phone         String?
-  userType      UserType @default(BOTH)
 
   githubId Int?    @unique
   googleId String? @unique
@@ -134,6 +133,7 @@ model User {
 model FreelancerProfile {
   id     String @id @default(cuid())
   userId String @unique
+  slug   String @unique
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   title        String?
@@ -176,7 +176,8 @@ model ClientProfile {
 
 model Project {
   id                String     @id @default(cuid())
-  title             String
+  slug              String     @unique
+  title             String     @unique
   description       String
   budget            String
   budgetType        BudgetType

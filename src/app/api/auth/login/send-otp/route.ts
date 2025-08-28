@@ -23,7 +23,7 @@ export const POST = async (req: Request) => {
             code: otp,
             userName: user.name?.split(" ")[0] || "",
         });
-
+        
         return new Response(null, {
             status: 200,
         });
