@@ -1,22 +1,17 @@
+// components/section/projects/project-filters.tsx
 "use client"
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../ui/select"
 import { Button } from "../../ui/button"
 import { Badge } from "../../ui/badge"
 import { X } from "lucide-react"
-
-interface Filters {
-    search: string
-    category: string
-    budgetMin: number
-    budgetMax: number
-    experienceLevel: string
-    sortBy: "newest" | "budget" | "proposals"
-}
+import { Filters } from "@/hooks/use-project-filters"
 
 interface ProjectsFiltersProps {
     filters: Filters
-    onChange: (filters: Partial<Filters>) => void
+    onFiltersChange: (filters: Partial<Filters>) => void
+    activeFiltersCount: number
+    onClearAll: () => void
 }
 
 const categories = [
@@ -43,21 +38,19 @@ const sortOptions = [
     { value: "proposals", label: "Most Proposals" },
 ]
 
-export function ProjectsFilters({ filters, onChange }: ProjectsFiltersProps) {
-    const activeFiltersCount = [filters.category, filters.experienceLevel].filter(Boolean).length
-
-    const clearAllFilters = () => {
-        onChange({
-            category: "",
-            experienceLevel: "",
-            budgetMin: 0,
-            budgetMax: 50000,
-        })
-    }
+export function ProjectsFilters({
+    filters,
+    onFiltersChange,
+    activeFiltersCount,
+    onClearAll
+}: ProjectsFiltersProps) {
 
     return (
         <div className="flex flex-wrap items-center gap-4">
-            <Select value={filters.category} onValueChange={(value) => onChange({ category: value })}>
+            <Select
+                value={filters.category || "all"}
+                onValueChange={(value) => onFiltersChange({ category: value === "all" ? "" : value })}
+            >
                 <SelectTrigger className="w-48 bg-white">
                     <SelectValue placeholder="All Categories" />
                 </SelectTrigger>
@@ -71,7 +64,10 @@ export function ProjectsFilters({ filters, onChange }: ProjectsFiltersProps) {
                 </SelectContent>
             </Select>
 
-            <Select value={filters.experienceLevel} onValueChange={(value) => onChange({ experienceLevel: value })}>
+            <Select
+                value={filters.experienceLevel || "all"}
+                onValueChange={(value) => onFiltersChange({ experienceLevel: value === "all" ? "" : value })}
+            >
                 <SelectTrigger className="w-48 bg-white">
                     <SelectValue placeholder="All Levels" />
                 </SelectTrigger>
@@ -84,9 +80,12 @@ export function ProjectsFilters({ filters, onChange }: ProjectsFiltersProps) {
                     ))}
                 </SelectContent>
             </Select>
+
             <Select
                 value={filters.sortBy}
-                onValueChange={(value: "newest" | "budget" | "proposals") => onChange({ sortBy: value })}
+                onValueChange={(value: "newest" | "budget" | "proposals") =>
+                    onFiltersChange({ sortBy: value })
+                }
             >
                 <SelectTrigger className="w-48 bg-white">
                     <SelectValue />
@@ -108,7 +107,7 @@ export function ProjectsFilters({ filters, onChange }: ProjectsFiltersProps) {
                     <Button
                         variant="ghost"
                         size="sm"
-                        onClick={clearAllFilters}
+                        onClick={onClearAll}
                         className="h-8 px-2 text-slate-600 hover:text-slate-900"
                     >
                         <X className="h-4 w-4 mr-1" />

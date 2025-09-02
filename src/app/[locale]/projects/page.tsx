@@ -4,29 +4,31 @@ import { getProjects } from "./actions"
 
 
 interface ProjectsPageProps {
-    searchParams: {
+    searchParams: Promise<{
         search?: string
         category?: string
         budgetMin?: string
         budgetMax?: string
         experienceLevel?: string
         sortBy?: "newest" | "budget" | "proposals"
-    }
+    }>
 }
 
 export default async function ProjectsPage({ searchParams }: ProjectsPageProps) {
+    const params = await searchParams
+
     const filters = {
-        search: searchParams.search || "",
-        category: searchParams.category || "",
-        budgetMin: searchParams.budgetMin ? Number.parseInt(searchParams.budgetMin) : 0,
-        budgetMax: searchParams.budgetMax ? Number.parseInt(searchParams.budgetMax) : 50000,
-        experienceLevel: searchParams.experienceLevel || "",
-        sortBy: searchParams.sortBy || ("newest" as const),
+        search: params.search || "",
+        category: params.category || "",
+        budgetMin: params.budgetMin ? Number.parseInt(params.budgetMin) : 0,
+        budgetMax: params.budgetMax ? Number.parseInt(params.budgetMax) : 50000,
+        experienceLevel: params.experienceLevel || "",
+        sortBy: params.sortBy || ("newest" as const),
     }
 
     const result = await getProjects(filters)
 
-    return <ProjectsListingPage initialProjects={result.projects as any} initialFilters={filters} />
+    return <ProjectsListingPage projects={result.projects as any} />
 }
 
 export async function generateMetadata() {

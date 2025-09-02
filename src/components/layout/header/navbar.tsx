@@ -15,7 +15,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
 import { User } from "@prisma/client"
-import LogoutButton from "@/components/shared/logout-button"
 import { getInitials } from "@/lib/utils"
 import { logout } from "@/app/[locale]/actions"
 
@@ -47,13 +46,13 @@ export default function Navbar({ user, headerText }: NavbarProps) {
 
 
                 <div className="hidden md:flex items-center gap-6">
-                    <Link href="/" className="text-foreground hover:text-primary transition-colors">
+                    <Link href="/projects" className="text-foreground hover:text-primary transition-colors">
                         {headerText.projects}
                     </Link>
-                    <Link href="#" className="text-muted-foreground hover:text-foreground transition-colors">
+                    <Link href="/freelancers" className="text-muted-foreground hover:text-foreground transition-colors">
                         {headerText.freelancers}
                     </Link>
-                    <Link href="#" className="text-muted-foreground hover:text-foreground transition-colors">
+                    <Link href="/about" className="text-muted-foreground hover:text-foreground transition-colors">
                         {headerText.about}
                     </Link>
                 </div>

@@ -1,13 +1,13 @@
 "use client"
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { Grid, List } from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Clock, Star, Users } from "lucide-react"
 import { ProjectsSearch } from "../section/projects/project-search"
 import { ProjectsFilters } from "../section/projects/project-filters"
-import { Button } from "../ui/button"
-import { ProjectCard } from "../section/projects/project-card"
-import Link from "next/link"
+import { useMemo } from "react"
+import { useProjectFilters } from "@/hooks/use-project-filters"
 
 interface Project {
     id: string
@@ -17,11 +17,11 @@ interface Project {
     category: string
     subcategory: string
     budgetType: string
-    budget: string
-    minBudget: number
-    maxBudget: number
-    deadline: Date
-    estimatedDuration: string
+    budget: number | null
+    minBudget: number | null
+    maxBudget: number | null
+    deadline: string | null
+    estimatedDuration: string | null
     skillsRequired: string[]
     technologies: string[]
     experienceLevel: string
@@ -32,131 +32,170 @@ interface Project {
     status: string
     proposals: number
     views: number
-    createdAt: Date
-    updatedAt: Date
-    postedAt: Date
+    createdAt: string
+    updatedAt: string
+    postedAt: string | null
     user: {
         id: string
-        name: string
+        name: string | null
         email: string
-        picture: string
-        location: string
-        clientProfile?: {
-            companyName: string
-            industry: string
-            totalSpent: number
-            projectsPosted: number
-            averageRating: number
+        clientProfile: {
+            companyName: string | null
+            averageRating: number | null
             totalReviews: number
-        }
+        } | null
     }
-}
-
-interface Filters {
-    search: string
-    category: string
-    budgetMin: number
-    budgetMax: number
-    experienceLevel: string
-    sortBy: "newest" | "budget" | "proposals"
 }
 
 interface ProjectsListingPageProps {
-    initialProjects: Project[]
-    initialFilters: Filters
+    projects: Project[]
 }
 
-export function ProjectsListingPage({ initialProjects, initialFilters }: ProjectsListingPageProps) {
-    const router = useRouter()
-    const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
-    const [filters, setFilters] = useState<Filters>(initialFilters)
+export function ProjectsListingPage({ projects }: ProjectsListingPageProps) {
+    const { filters, updateFilters, clearFilters, activeFiltersCount } = useProjectFilters()
 
-    const projects = initialProjects
+    const formatBudget = (project: Project) => {
+        if (project.budgetType === "FIXED" && project.budget) {
+            return `$${project.budget.toLocaleString()}`
+        } else if (project.budgetType === "HOURLY" && project.minBudget && project.maxBudget) {
+            return `$${project.minBudget}-$${project.maxBudget}/hr`
+        }
+        return "Budget not specified"
+    }
 
-    const handleFiltersChange = (newFilters: Partial<Filters>) => {
-        const updatedFilters = { ...filters, ...newFilters }
-        setFilters(updatedFilters)
+    const formatTimeAgo = (dateString: string) => {
+        const date = new Date(dateString)
+        const now = new Date()
+        const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60))
 
-        const params = new URLSearchParams()
-        if (updatedFilters.search) params.set("search", updatedFilters.search)
-        if (updatedFilters.category) params.set("category", updatedFilters.category)
-        if (updatedFilters.budgetMin > 0) params.set("budgetMin", updatedFilters.budgetMin.toString())
-        if (updatedFilters.budgetMax < 50000) params.set("budgetMax", updatedFilters.budgetMax.toString())
-        if (updatedFilters.experienceLevel) params.set("experienceLevel", updatedFilters.experienceLevel)
-        if (updatedFilters.sortBy !== "newest") params.set("sortBy", updatedFilters.sortBy)
-
-        router.push(`/projects?${params.toString()}`)
+        if (diffInHours < 1) return "Just now"
+        if (diffInHours < 24) return `${diffInHours}h ago`
+        const diffInDays = Math.floor(diffInHours / 24)
+        if (diffInDays < 7) return `${diffInDays}d ago`
+        const diffInWeeks = Math.floor(diffInDays / 7)
+        return `${diffInWeeks}w ago`
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 to-emerald-50">
-            <div className="container mx-auto px-4 py-8">
-                <div className="mb-8">
-                    <div>
-                        <h1 className="text-4xl font-bold text-slate-900 mb-2">Find Your Next Project</h1>
-                        <p className="text-lg text-slate-600">Discover opportunities that match your skills and expertise</p>
-                    </div>
-                    <Button className="my-4" asChild>
-                        <Link href={'/projects/new'}>
-                            New Project
-                        </Link>
+        <div className="container mx-auto px-4 py-8">
+            <div className="mb-8">
+                <h1 className="text-3xl font-bold mb-4">Browse Projects</h1>
+                <p className="text-muted-foreground">
+                    Find your next freelance opportunity from thousands of projects
+                </p>
+            </div>
+
+            <div className="mb-8 flex flex-col gap-4">
+                <ProjectsSearch
+                    value={filters.search}
+                    onChange={(search) => updateFilters({ search })}
+                />
+                <ProjectsFilters
+                    filters={filters}
+                    onFiltersChange={updateFilters}
+                    activeFiltersCount={activeFiltersCount}
+                    onClearAll={clearFilters}
+                />
+            </div>
+
+            <div className="grid gap-6">
+                {projects.map((project) => (
+                    <Card key={project.id} className="hover:shadow-lg transition-shadow">
+                        <CardHeader>
+                            <div className="flex items-start justify-between">
+                                <div className="flex-1">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        {project.isFeatured && (
+                                            <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
+                                                Featured
+                                            </Badge>
+                                        )}
+                                        {project.isUrgent && <Badge variant="destructive">Urgent</Badge>}
+                                        <Badge variant="outline">{project.experienceLevel}</Badge>
+                                    </div>
+                                    <CardTitle className="text-xl mb-2 hover:text-primary cursor-pointer">
+                                        {project.title}
+                                    </CardTitle>
+                                    <p className="text-muted-foreground line-clamp-3 mb-4">
+                                        {project.description}
+                                    </p>
+                                </div>
+                                <div className="text-right">
+                                    <div className="text-2xl font-bold text-primary mb-1">
+                                        {formatBudget(project)}
+                                    </div>
+                                    <div className="text-sm text-muted-foreground">
+                                        {project.budgetType === "FIXED" ? "Fixed Price" : "Hourly Rate"}
+                                    </div>
+                                </div>
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="space-y-4">
+                                <div>
+                                    <div className="flex flex-wrap gap-2">
+                                        {project.skillsRequired.slice(0, 5).map((skill) => (
+                                            <Badge key={skill} variant="secondary" className="text-xs">
+                                                {skill}
+                                            </Badge>
+                                        ))}
+                                        {project.skillsRequired.length > 5 && (
+                                            <Badge variant="outline" className="text-xs">
+                                                +{project.skillsRequired.length - 5} more
+                                            </Badge>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center justify-between text-sm text-muted-foreground">
+                                    <div className="flex items-center gap-4">
+                                        <div className="flex items-center gap-1">
+                                            <Users className="h-4 w-4" />
+                                            <span>{project.proposals} proposals</span>
+                                        </div>
+                                        <div className="flex items-center gap-1">
+                                            <Clock className="h-4 w-4" />
+                                            <span>{formatTimeAgo(project.createdAt)}</span>
+                                        </div>
+                                        {project.deadline && (
+                                            <div className="flex items-center gap-1">
+                                                <Clock className="h-4 w-4" />
+                                                <span>Due: {new Date(project.deadline).toLocaleDateString()}</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        {project.user.clientProfile?.averageRating && (
+                                            <div className="flex items-center gap-1">
+                                                <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                                                <span>{project.user.clientProfile.averageRating.toFixed(1)}</span>
+                                                <span>({project.user.clientProfile.totalReviews})</span>
+                                            </div>
+                                        )}
+                                        <Button
+                                            size="sm"
+                                            onClick={() => window.open(`/projects/${project.slug}`, '_blank')}
+                                        >
+                                            View Details
+                                        </Button>
+                                    </div>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                ))}
+            </div>
+
+            {projects.length === 0 && (
+                <div className="text-center py-12">
+                    <p className="text-muted-foreground text-lg">
+                        No projects found matching your criteria.
+                    </p>
+                    <Button variant="outline" className="mt-4 bg-transparent" onClick={clearFilters}>
+                        Clear Filters
                     </Button>
                 </div>
-
-                <div className="mb-8 space-y-6">
-                    <ProjectsSearch value={filters.search} onChange={(search) => handleFiltersChange({ search })} />
-
-                    <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
-                        <ProjectsFilters filters={filters} onChange={handleFiltersChange} />
-
-                        <div className="flex items-center gap-2 bg-white rounded-lg p-1 border">
-                            <Button
-                                variant={viewMode === "grid" ? "default" : "ghost"}
-                                size="sm"
-                                onClick={() => setViewMode("grid")}
-                                className="h-8 w-8 p-0"
-                            >
-                                <Grid className="h-4 w-4" />
-                            </Button>
-                            <Button
-                                variant={viewMode === "list" ? "default" : "ghost"}
-                                size="sm"
-                                onClick={() => setViewMode("list")}
-                                className="h-8 w-8 p-0"
-                            >
-                                <List className="h-4 w-4" />
-                            </Button>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="mb-6">
-                    <p className="text-slate-600">{projects.length} projects found</p>
-                </div>
-
-                <div className={viewMode === "grid" ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" : "space-y-4"}>
-                    {projects.map((project) => (
-                        <ProjectCard key={project.id} project={project} viewMode={viewMode} />
-                    ))}
-                </div>
-
-                {projects.length === 0 && (
-                    <div className="text-center py-12">
-                        <div className="text-slate-400 mb-4">
-                            <svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                                />
-                            </svg>
-                        </div>
-                        <h3 className="text-lg font-medium text-slate-900 mb-2">No projects found</h3>
-                        <p className="text-slate-600">Try adjusting your search criteria or filters.</p>
-                    </div>
-                )}
-            </div>
+            )}
         </div>
     )
 }

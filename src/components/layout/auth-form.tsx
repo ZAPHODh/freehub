@@ -106,7 +106,7 @@ export default function AuthForm() {
             toast.success(
                 t('verifiedSuccess')
             );
-            window.location.href = "/account";
+            window.location.href = "/projects";
         } catch (error) {
             const errorMessage =
                 error instanceof Error ? error.message : "Something went wrong";

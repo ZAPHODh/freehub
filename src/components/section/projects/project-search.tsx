@@ -1,23 +1,42 @@
+// components/section/projects/project-search.tsx
 "use client"
 
 import type React from "react"
-
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Input } from "../../ui/input"
 import { Button } from "../../ui/button"
 import { Search, X } from "lucide-react"
+import { useDebounce } from "@/hooks/use-debounce"
 
 interface ProjectsSearchProps {
     value: string
     onChange: (value: string) => void
+    onSubmit?: (value: string) => void
 }
 
-export function ProjectsSearch({ value, onChange }: ProjectsSearchProps) {
+export function ProjectsSearch({ value, onChange, onSubmit }: ProjectsSearchProps) {
     const [localValue, setLocalValue] = useState(value)
+
+    // Sync with external value changes (from URL)
+    useEffect(() => {
+        setLocalValue(value)
+    }, [value])
+
+    // Optional: Auto-search with debounce (uncomment if you want live search)
+    const debouncedValue = useDebounce(localValue, 500)
+    useEffect(() => {
+        if (debouncedValue !== value) {
+            onChange(debouncedValue)
+        }
+    }, [debouncedValue, value, onChange])
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
-        onChange(localValue)
+        if (onSubmit) {
+            onSubmit(localValue)
+        } else {
+            onChange(localValue)
+        }
     }
 
     const handleClear = () => {

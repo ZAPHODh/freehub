@@ -1,555 +1,629 @@
 "use client"
 
-import type React from "react"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { useTransition, useState } from "react"
+import { useRouter } from "next/navigation"
 
-import { useState } from "react"
 
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { X, Plus } from "lucide-react"
+import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Separator } from "@/components/ui/separator"
+import MultipleSelector, { type Option } from "@/components/ui/multiselect"
+import { type CreateProjectFormData, createProjectSchema } from "@/lib/zod/project"
+import { AlertCircle, DollarSign, Calendar, Clock, Tag, Zap } from "lucide-react"
 import { createProject } from "@/app/[locale]/projects/actions"
-import { toast } from "sonner"
-import { CreateProjectFormData, createProjectSchema } from "@/lib/schemas/project"
 
+const skillsOptions: Option[] = [
+    { value: "javascript", label: "JavaScript" },
+    { value: "typescript", label: "TypeScript" },
+    { value: "react", label: "React" },
+    { value: "vue", label: "Vue.js" },
+    { value: "angular", label: "Angular" },
+    { value: "nodejs", label: "Node.js" },
+    { value: "python", label: "Python" },
+    { value: "java", label: "Java" },
+    { value: "php", label: "PHP" },
+    { value: "csharp", label: "C#" },
+    { value: "sql", label: "SQL" },
+    { value: "mongodb", label: "MongoDB" },
+    { value: "postgresql", label: "PostgreSQL" },
+    { value: "mysql", label: "MySQL" },
+    { value: "redis", label: "Redis" },
+    { value: "docker", label: "Docker" },
+    { value: "kubernetes", label: "Kubernetes" },
+    { value: "aws", label: "AWS" },
+    { value: "azure", label: "Azure" },
+    { value: "gcp", label: "Google Cloud" },
+    { value: "devops", label: "DevOps" },
+    { value: "ui-ux", label: "UI/UX Design" },
+    { value: "figma", label: "Figma" },
+    { value: "photoshop", label: "Photoshop" },
+    { value: "illustrator", label: "Illustrator" },
+]
+
+const technologiesOptions: Option[] = [
+    { value: "nextjs", label: "Next.js" },
+    { value: "nuxtjs", label: "Nuxt.js" },
+    { value: "sveltekit", label: "SvelteKit" },
+    { value: "remix", label: "Remix" },
+    { value: "astro", label: "Astro" },
+    { value: "gatsby", label: "Gatsby" },
+    { value: "express", label: "Express.js" },
+    { value: "nestjs", label: "NestJS" },
+    { value: "fastapi", label: "FastAPI" },
+    { value: "django", label: "Django" },
+    { value: "flask", label: "Flask" },
+    { value: "laravel", label: "Laravel" },
+    { value: "symfony", label: "Symfony" },
+    { value: "spring", label: "Spring Boot" },
+    { value: "dotnet", label: ".NET" },
+    { value: "tailwindcss", label: "Tailwind CSS" },
+    { value: "bootstrap", label: "Bootstrap" },
+    { value: "sass", label: "Sass" },
+    { value: "styled-components", label: "Styled Components" },
+    { value: "graphql", label: "GraphQL" },
+    { value: "rest-api", label: "REST API" },
+    { value: "websocket", label: "WebSocket" },
+    { value: "jwt", label: "JWT" },
+    { value: "oauth", label: "OAuth" },
+]
+
+const tagsOptions: Option[] = [
+    { value: "frontend", label: "Frontend" },
+    { value: "backend", label: "Backend" },
+    { value: "fullstack", label: "Full Stack" },
+    { value: "mobile", label: "Mobile" },
+    { value: "web", label: "Web" },
+    { value: "desktop", label: "Desktop" },
+    { value: "api", label: "API" },
+    { value: "database", label: "Database" },
+    { value: "ui-design", label: "UI Design" },
+    { value: "ux-design", label: "UX Design" },
+    { value: "responsive", label: "Responsive Design" },
+    { value: "e-commerce", label: "E-commerce" },
+    { value: "cms", label: "CMS" },
+    { value: "blog", label: "Blog" },
+    { value: "portfolio", label: "Portfolio" },
+    { value: "dashboard", label: "Dashboard" },
+    { value: "admin-panel", label: "Admin Panel" },
+    { value: "automation", label: "Automation" },
+    { value: "data-analysis", label: "Data Analysis" },
+    { value: "machine-learning", label: "Machine Learning" },
+    { value: "ai", label: "Artificial Intelligence" },
+    { value: "blockchain", label: "Blockchain" },
+    { value: "testing", label: "Testing" },
+    { value: "performance", label: "Performance" },
+    { value: "security", label: "Security" },
+    { value: "maintenance", label: "Maintenance" },
+    { value: "bug-fix", label: "Bug Fix" },
+    { value: "refactoring", label: "Refactoring" },
+    { value: "migration", label: "Migration" },
+    { value: "integration", label: "Integration" },
+]
+
+const categoryOptions = [
+    { value: "web-development", label: "Web Development" },
+    { value: "mobile-development", label: "Mobile Development" },
+    { value: "desktop-development", label: "Desktop Development" },
+    { value: "ui-ux-design", label: "UI/UX Design" },
+    { value: "data-science", label: "Data Science" },
+    { value: "devops", label: "DevOps" },
+    { value: "blockchain", label: "Blockchain" },
+    { value: "ai-ml", label: "AI/Machine Learning" },
+    { value: "game-development", label: "Game Development" },
+    { value: "other", label: "Other" },
+]
+
+const projectTypeOptions = [
+    { value: "website", label: "Website" },
+    { value: "web-app", label: "Web Application" },
+    { value: "mobile-app", label: "Mobile App" },
+    { value: "desktop-app", label: "Desktop Application" },
+    { value: "api", label: "API Development" },
+    { value: "database", label: "Database Design" },
+    { value: "integration", label: "System Integration" },
+    { value: "maintenance", label: "Maintenance & Support" },
+    { value: "consulting", label: "Consulting" },
+    { value: "other", label: "Other" },
+]
 
 export function CreateProjectForm() {
-    const [isSubmitting, setIsSubmitting] = useState(false)
-    const [skillInput, setSkillInput] = useState("")
-    const [techInput, setTechInput] = useState("")
-    const [tagInput, setTagInput] = useState("")
-    const [errors, setErrors] = useState<Record<string, string>>({})
+    const [isPending, startTransition] = useTransition()
+    const [error, setError] = useState<string | null>(null)
+    const router = useRouter()
 
-    const [formData, setFormData] = useState<CreateProjectFormData>({
-        title: "",
-        description: "",
-        category: "",
-        subcategory: "",
-        budgetType: "FIXED",
-        budget: "",
-        minBudget: "",
-        maxBudget: "",
-        deadline: "",
-        estimatedDuration: "",
-        skillsRequired: [],
-        technologies: [],
-        tags: [],
-        experienceLevel: "INTERMEDIATE",
-        projectType: "",
-        isUrgent: false,
+    const form = useForm<CreateProjectFormData>({
+        resolver: zodResolver(createProjectSchema),
+        defaultValues: {
+            title: "",
+            description: "",
+            category: "",
+            subcategory: "",
+            budgetType: "FIXED",
+            budget: "",
+            minBudget: "",
+            maxBudget: "",
+            deadline: "",
+            estimatedDuration: "",
+            skillsRequired: [],
+            technologies: [],
+            experienceLevel: "BEGINNER",
+            projectType: "",
+            tags: [],
+            isUrgent: false,
+        },
     })
 
-    const updateField = (field: keyof CreateProjectFormData, value: any) => {
-        setFormData((prev) => ({ ...prev, [field]: value }))
-        // Clear error when user starts typing
-        if (errors[field]) {
-            setErrors((prev) => ({ ...prev, [field]: "" }))
-        }
-    }
+    const budgetType = form.watch("budgetType")
+    const selectedSkills = form.watch("skillsRequired")
+    const selectedTags = form.watch("tags")
 
-    const addSkill = () => {
-        if (skillInput.trim()) {
-            if (!formData.skillsRequired.includes(skillInput.trim())) {
-                updateField("skillsRequired", [...formData.skillsRequired, skillInput.trim()])
+    function onSubmit(values: CreateProjectFormData) {
+        setError(null)
+
+        const formData = new FormData()
+        Object.entries(values).forEach(([key, val]) => {
+            if (Array.isArray(val)) {
+                formData.append(key, JSON.stringify(val))
+            } else if (typeof val === "boolean") {
+                formData.append(key, val.toString())
+            } else if (val !== null && val !== undefined) {
+                formData.append(key, String(val))
             }
-            setSkillInput("")
-        }
-    }
+        })
 
-    const removeSkill = (skill: string) => {
-        updateField(
-            "skillsRequired",
-            formData.skillsRequired.filter((s) => s !== skill),
-        )
-    }
-
-    const addTechnology = () => {
-        if (techInput.trim()) {
-            if (!formData.technologies.includes(techInput.trim())) {
-                updateField("technologies", [...formData.technologies, techInput.trim()])
+        startTransition(async () => {
+            try {
+                await createProject(formData)
+            } catch (err) {
+                setError(err instanceof Error ? err.message : "Failed to create project")
             }
-            setTechInput("")
-        }
+        })
     }
-
-    const removeTechnology = (tech: string) => {
-        updateField(
-            "technologies",
-            formData.technologies.filter((t) => t !== tech),
-        )
-    }
-
-    const addTag = () => {
-        if (tagInput.trim()) {
-            if (!formData.tags.includes(tagInput.trim())) {
-                updateField("tags", [...formData.tags, tagInput.trim()])
-            }
-            setTagInput("")
-        }
-    }
-
-    const removeTag = (tag: string) => {
-        updateField(
-            "tags",
-            formData.tags.filter((t) => t !== tag),
-        )
-    }
-
-    const validateForm = () => {
-        try {
-            createProjectSchema.parse(formData)
-            setErrors({})
-            return true
-        } catch (error: any) {
-            const newErrors: Record<string, string> = {}
-            if (error.errors) {
-                error.errors.forEach((err: any) => {
-                    const field = err.path[0]
-                    newErrors[field] = err.message
-                })
-            }
-            setErrors(newErrors)
-            return false
-        }
-    }
-
-    async function handleSubmit(e: React.FormEvent) {
-        e.preventDefault()
-
-        if (!validateForm()) {
-            toast.error("Validation Error", {
-                description: "Please fix the errors in the form",
-            })
-            return
-        }
-
-        setIsSubmitting(true)
-        try {
-            const formDataObj = new FormData()
-
-            // Add all form fields to FormData
-            Object.entries(formData).forEach(([key, value]) => {
-                if (Array.isArray(value)) {
-                    formDataObj.append(key, JSON.stringify(value))
-                } else if (value !== undefined && value !== null) {
-                    formDataObj.append(key, value.toString())
-                }
-            })
-
-            await createProject(formDataObj)
-
-            toast.success("Success!", {
-                description: "Your project has been created successfully.",
-            })
-        } catch (error) {
-            toast.error("Error", {
-                description: error instanceof Error ? error.message : "Failed to create project",
-            })
-        } finally {
-            setIsSubmitting(false)
-        }
-    }
-
-    const categories = [
-        "Web Development",
-        "Mobile Development",
-        "Design",
-        "Writing",
-        "Marketing",
-        "Data Science",
-        "DevOps",
-        "Other",
-    ]
-
-    const projectTypes = [
-        "Website",
-        "Mobile App",
-        "Desktop App",
-        "API Development",
-        "Database Design",
-        "UI/UX Design",
-        "Content Writing",
-        "SEO/Marketing",
-        "Data Analysis",
-        "Other",
-    ]
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-8">
-            <Card>
-                <CardHeader>
-                    <CardTitle>Basic Information</CardTitle>
-                    <CardDescription>Provide the essential details about your project</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                    <div>
-                        <label htmlFor="title" className="block text-sm font-medium mb-2">
-                            Project Title
-                        </label>
-                        <Input
-                            id="title"
-                            placeholder="Enter a clear, descriptive title for your project"
-                            value={formData.title}
-                            onChange={(e) => updateField("title", e.target.value)}
-                            className={errors.title ? "border-red-500" : ""}
-                        />
-                        {errors.title && <p className="text-red-500 text-sm mt-1">{errors.title}</p>}
-                    </div>
+        <div className="max-w-4xl mx-auto space-y-8">
+            {error && (
+                <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>{error}</AlertDescription>
+                </Alert>
+            )}
 
-                    <div>
-                        <label htmlFor="description" className="block text-sm font-medium mb-2">
-                            Project Description
-                        </label>
-                        <Textarea
-                            id="description"
-                            placeholder="Describe your project in detail. Include goals, requirements, and any specific features you need..."
-                            className={`min-h-32 ${errors.description ? "border-red-500" : ""}`}
-                            value={formData.description}
-                            onChange={(e) => updateField("description", e.target.value)}
-                        />
-                        <p className="text-sm text-muted-foreground mt-1">
-                            Minimum 50 characters. Be specific about what you need.
-                        </p>
-                        {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description}</p>}
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label htmlFor="category" className="block text-sm font-medium mb-2">
-                                Category
-                            </label>
-                            <select
-                                id="category"
-                                value={formData.category}
-                                onChange={(e) => updateField("category", e.target.value)}
-                                className={`w-full px-3 py-2 border rounded-md bg-background ${errors.category ? "border-red-500" : "border-input"}`}
-                            >
-                                <option value="">Select a category</option>
-                                {categories.map((category) => (
-                                    <option key={category} value={category}>
-                                        {category}
-                                    </option>
-                                ))}
-                            </select>
-                            {errors.category && <p className="text-red-500 text-sm mt-1">{errors.category}</p>}
-                        </div>
-
-                        <div>
-                            <label htmlFor="subcategory" className="block text-sm font-medium mb-2">
-                                Subcategory (Optional)
-                            </label>
-                            <Input
-                                id="subcategory"
-                                placeholder="e.g., React Development, Logo Design"
-                                value={formData.subcategory}
-                                onChange={(e) => updateField("subcategory", e.target.value)}
+            <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+                    {/* Basic Information */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <Tag className="h-5 w-5" />
+                                Project Details
+                            </CardTitle>
+                            <CardDescription>Provide basic information about your project</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                            <FormField
+                                control={form.control}
+                                name="title"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Project Title *</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="Enter a clear, descriptive project title" {...field} className="text-lg" />
+                                        </FormControl>
+                                        <FormDescription>A compelling title helps attract the right freelancers</FormDescription>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
                             />
-                        </div>
-                    </div>
 
-                    <div>
-                        <label htmlFor="projectType" className="block text-sm font-medium mb-2">
-                            Project Type
-                        </label>
-                        <select
-                            id="projectType"
-                            value={formData.projectType}
-                            onChange={(e) => updateField("projectType", e.target.value)}
-                            className={`w-full px-3 py-2 border rounded-md bg-background ${errors.projectType ? "border-red-500" : "border-input"}`}
-                        >
-                            <option value="">Select project type</option>
-                            {projectTypes.map((type) => (
-                                <option key={type} value={type}>
-                                    {type}
-                                </option>
-                            ))}
-                        </select>
-                        {errors.projectType && <p className="text-red-500 text-sm mt-1">{errors.projectType}</p>}
-                    </div>
-                </CardContent>
-            </Card>
-            <Card>
-                <CardHeader>
-                    <CardTitle>Budget & Timeline</CardTitle>
-                    <CardDescription>Set your budget and project timeline</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                    <div>
-                        <label htmlFor="budgetType" className="block text-sm font-medium mb-2">
-                            Budget Type
-                        </label>
-                        <select
-                            id="budgetType"
-                            value={formData.budgetType}
-                            onChange={(e) => updateField("budgetType", e.target.value as "FIXED" | "HOURLY")}
-                            className="w-full px-3 py-2 border rounded-md bg-background border-input"
-                        >
-                            <option value="FIXED">Fixed Price</option>
-                            <option value="HOURLY">Hourly Rate</option>
-                        </select>
-                    </div>
-
-                    {formData.budgetType === "FIXED" ? (
-                        <div>
-                            <label htmlFor="budget" className="block text-sm font-medium mb-2">
-                                Fixed Budget ($)
-                            </label>
-                            <Input
-                                id="budget"
-                                type="number"
-                                placeholder="5000"
-                                value={formData.budget}
-                                onChange={(e) => updateField("budget", e.target.value)}
-                                className={errors.budget ? "border-red-500" : ""}
+                            <FormField
+                                control={form.control}
+                                name="description"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Project Description *</FormLabel>
+                                        <FormControl>
+                                            <Textarea
+                                                placeholder="Describe your project in detail. Include objectives, requirements, deliverables, and any specific preferences..."
+                                                className="min-h-32 resize-none"
+                                                {...field}
+                                            />
+                                        </FormControl>
+                                        <FormDescription>{field.value?.length || 0}/2000 characters (minimum 50 required)</FormDescription>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
                             />
-                            {errors.budget && <p className="text-red-500 text-sm mt-1">{errors.budget}</p>}
-                        </div>
-                    ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <label htmlFor="minBudget" className="block text-sm font-medium mb-2">
-                                    Min Hourly Rate ($)
-                                </label>
-                                <Input
-                                    id="minBudget"
-                                    type="number"
-                                    placeholder="25"
-                                    value={formData.minBudget}
-                                    onChange={(e) => updateField("minBudget", e.target.value)}
-                                    className={errors.minBudget ? "border-red-500" : ""}
-                                />
-                                {errors.minBudget && <p className="text-red-500 text-sm mt-1">{errors.minBudget}</p>}
-                            </div>
-                            <div>
-                                <label htmlFor="maxBudget" className="block text-sm font-medium mb-2">
-                                    Max Hourly Rate ($)
-                                </label>
-                                <Input
-                                    id="maxBudget"
-                                    type="number"
-                                    placeholder="75"
-                                    value={formData.maxBudget}
-                                    onChange={(e) => updateField("maxBudget", e.target.value)}
-                                    className={errors.maxBudget ? "border-red-500" : ""}
-                                />
-                                {errors.maxBudget && <p className="text-red-500 text-sm mt-1">{errors.maxBudget}</p>}
-                            </div>
-                        </div>
-                    )}
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label htmlFor="deadline" className="block text-sm font-medium mb-2">
-                                Deadline (Optional)
-                            </label>
-                            <Input
-                                id="deadline"
-                                type="date"
-                                value={formData.deadline}
-                                onChange={(e) => updateField("deadline", e.target.value)}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <FormField
+                                    control={form.control}
+                                    name="category"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Category *</FormLabel>
+                                            <Select onValueChange={field.onChange} value={field.value}>
+                                                <FormControl>
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Select project category" />
+                                                    </SelectTrigger>
+                                                </FormControl>
+                                                <SelectContent>
+                                                    {categoryOptions.map((option) => (
+                                                        <SelectItem key={option.value} value={option.value}>
+                                                            {option.label}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+
+                                <FormField
+                                    control={form.control}
+                                    name="projectType"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Project Type *</FormLabel>
+                                            <Select onValueChange={field.onChange} value={field.value}>
+                                                <FormControl>
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Select project type" />
+                                                    </SelectTrigger>
+                                                </FormControl>
+                                                <SelectContent>
+                                                    {projectTypeOptions.map((option) => (
+                                                        <SelectItem key={option.value} value={option.value}>
+                                                            {option.label}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            </div>
+
+                            <FormField
+                                control={form.control}
+                                name="subcategory"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Subcategory</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="Optional: Specify a subcategory" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
                             />
-                        </div>
+                        </CardContent>
+                    </Card>
 
-                        <div>
-                            <label htmlFor="estimatedDuration" className="block text-sm font-medium mb-2">
-                                Estimated Duration (Optional)
-                            </label>
-                            <Input
-                                id="estimatedDuration"
-                                placeholder="e.g., 2 weeks, 1 month"
-                                value={formData.estimatedDuration}
-                                onChange={(e) => updateField("estimatedDuration", e.target.value)}
+                    {/* Budget Information */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <DollarSign className="h-5 w-5" />
+                                Budget & Timeline
+                            </CardTitle>
+                            <CardDescription>Set your budget and project timeline</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                            <FormField
+                                control={form.control}
+                                name="budgetType"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Budget Type *</FormLabel>
+                                        <Select onValueChange={field.onChange} value={field.value}>
+                                            <FormControl>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Select budget type" />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                <SelectItem value="FIXED">Fixed Price</SelectItem>
+                                                <SelectItem value="HOURLY">Hourly Rate</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                        <FormDescription>
+                                            {budgetType === "FIXED"
+                                                ? "Pay a fixed amount for the entire project"
+                                                : "Pay based on hours worked"}
+                                        </FormDescription>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
                             />
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
 
-            {/* Skills & Requirements */}
-            <Card>
-                <CardHeader>
-                    <CardTitle>Skills & Requirements</CardTitle>
-                    <CardDescription>Specify the skills and technologies needed for your project</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                    <div>
-                        <label htmlFor="experienceLevel" className="block text-sm font-medium mb-2">
-                            Required Experience Level
-                        </label>
-                        <select
-                            id="experienceLevel"
-                            value={formData.experienceLevel}
-                            onChange={(e) =>
-                                updateField("experienceLevel", e.target.value as "BEGINNER" | "INTERMEDIATE" | "ADVANCED")
-                            }
-                            className="w-full px-3 py-2 border rounded-md bg-background border-input"
-                        >
-                            <option value="BEGINNER">Beginner</option>
-                            <option value="INTERMEDIATE">Intermediate</option>
-                            <option value="ADVANCED">Advanced</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium mb-2">Required Skills</label>
-                        <div className="space-y-3">
-                            <div className="flex gap-2">
-                                <Input
-                                    placeholder="Add a skill (e.g., React, Python, Photoshop)"
-                                    value={skillInput}
-                                    onChange={(e) => setSkillInput(e.target.value)}
-                                    onKeyDown={(e) => {
-                                        if (e.key === "Enter") {
-                                            e.preventDefault()
-                                            addSkill()
-                                        }
-                                    }}
+                            {budgetType === "FIXED" ? (
+                                <FormField
+                                    control={form.control}
+                                    name="budget"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Fixed Budget ($) *</FormLabel>
+                                            <FormControl>
+                                                <Input type="number" placeholder="Enter total project budget" {...field} />
+                                            </FormControl>
+                                            <FormDescription>Total amount you're willing to pay for this project</FormDescription>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
                                 />
-                                <Button type="button" onClick={addSkill} size="sm">
-                                    <Plus className="h-4 w-4" />
-                                </Button>
-                            </div>
-                            <div className="flex flex-wrap gap-2">
-                                {formData.skillsRequired.map((skill) => (
-                                    <div
-                                        key={skill}
-                                        className="flex items-center gap-1 bg-secondary text-secondary-foreground px-2 py-1 rounded-md text-sm"
-                                    >
-                                        {skill}
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={() => removeSkill(skill)}
-                                            className="h-4 w-4 p-0 hover:text-destructive"
-                                        >
-                                            <X className="h-3 w-3" />
-                                        </Button>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                        <p className="text-sm text-muted-foreground mt-1">Add at least one required skill for your project</p>
-                        {errors.skillsRequired && <p className="text-red-500 text-sm mt-1">{errors.skillsRequired}</p>}
-                    </div>
+                            ) : (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <FormField
+                                        control={form.control}
+                                        name="minBudget"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Min Hourly Rate ($) *</FormLabel>
+                                                <FormControl>
+                                                    <Input type="number" placeholder="Minimum rate" {...field} />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={form.control}
+                                        name="maxBudget"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Max Hourly Rate ($) *</FormLabel>
+                                                <FormControl>
+                                                    <Input type="number" placeholder="Maximum rate" {...field} />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                </div>
+                            )}
 
-                    <div>
-                        <label className="block text-sm font-medium mb-2">Technologies (Optional)</label>
-                        <div className="space-y-3">
-                            <div className="flex gap-2">
-                                <Input
-                                    placeholder="Add a technology (e.g., Node.js, PostgreSQL, AWS)"
-                                    value={techInput}
-                                    onChange={(e) => setTechInput(e.target.value)}
-                                    onKeyDown={(e) => {
-                                        if (e.key === "Enter") {
-                                            e.preventDefault()
-                                            addTechnology()
-                                        }
-                                    }}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <FormField
+                                    control={form.control}
+                                    name="deadline"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel className="flex items-center gap-2">
+                                                <Calendar className="h-4 w-4" />
+                                                Project Deadline
+                                            </FormLabel>
+                                            <FormControl>
+                                                <Input type="date" {...field} />
+                                            </FormControl>
+                                            <FormDescription>When do you need this completed?</FormDescription>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
                                 />
-                                <Button type="button" onClick={addTechnology} size="sm">
-                                    <Plus className="h-4 w-4" />
-                                </Button>
-                            </div>
-                            <div className="flex flex-wrap gap-2">
-                                {formData.technologies.map((tech) => (
-                                    <div
-                                        key={tech}
-                                        className="flex items-center gap-1 border border-border bg-background px-2 py-1 rounded-md text-sm"
-                                    >
-                                        {tech}
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={() => removeTechnology(tech)}
-                                            className="h-4 w-4 p-0 hover:text-destructive"
-                                        >
-                                            <X className="h-3 w-3" />
-                                        </Button>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
 
-                    <div>
-                        <label className="block text-sm font-medium mb-2">Tags (Optional)</label>
-                        <div className="space-y-3">
-                            <div className="flex gap-2">
-                                <Input
-                                    placeholder="Add tags to help categorize your project"
-                                    value={tagInput}
-                                    onChange={(e) => setTagInput(e.target.value)}
-                                    onKeyDown={(e) => {
-                                        if (e.key === "Enter") {
-                                            e.preventDefault()
-                                            addTag()
-                                        }
-                                    }}
+                                <FormField
+                                    control={form.control}
+                                    name="estimatedDuration"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel className="flex items-center gap-2">
+                                                <Clock className="h-4 w-4" />
+                                                Estimated Duration
+                                            </FormLabel>
+                                            <FormControl>
+                                                <Input placeholder="e.g., 2 weeks, 1 month" {...field} />
+                                            </FormControl>
+                                            <FormDescription>How long do you expect this to take?</FormDescription>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
                                 />
-                                <Button type="button" onClick={addTag} size="sm">
-                                    <Plus className="h-4 w-4" />
-                                </Button>
                             </div>
-                            <div className="flex flex-wrap gap-2">
-                                {formData.tags.map((tag) => (
-                                    <div
-                                        key={tag}
-                                        className="flex items-center gap-1 bg-primary text-primary-foreground px-2 py-1 rounded-md text-sm"
-                                    >
-                                        {tag}
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={() => removeTag(tag)}
-                                            className="h-4 w-4 p-0 hover:text-primary-foreground/80"
-                                        >
-                                            <X className="h-3 w-3" />
-                                        </Button>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
+                        </CardContent>
+                    </Card>
 
-            {/* Additional Options */}
-            <Card>
-                <CardHeader>
-                    <CardTitle>Additional Options</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="flex items-start space-x-3">
-                        <input
-                            type="checkbox"
-                            id="isUrgent"
-                            checked={formData.isUrgent}
-                            onChange={(e) => updateField("isUrgent", e.target.checked)}
-                            className="mt-1"
-                        />
-                        <div className="space-y-1">
-                            <label htmlFor="isUrgent" className="text-sm font-medium">
-                                This is an urgent project
-                            </label>
-                            <p className="text-sm text-muted-foreground">Mark this project as urgent to attract faster responses</p>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
+                    {/* Skills & Requirements */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Skills & Requirements</CardTitle>
+                            <CardDescription>Specify the skills and technologies needed for your project</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                            <FormField
+                                control={form.control}
+                                name="skillsRequired"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Required Skills *</FormLabel>
+                                        <FormControl>
+                                            <MultipleSelector
+                                                value={field.value.map((skill) => ({ value: skill, label: skill }))}
+                                                onChange={(options) => field.onChange(options.map((option) => option.value))}
+                                                defaultOptions={skillsOptions}
+                                                placeholder="Select required skills"
+                                                emptyIndicator={<p className="text-center text-sm text-muted-foreground">No skills found</p>}
+                                                commandProps={{
+                                                    label: "Select skills",
+                                                }}
+                                            />
+                                        </FormControl>
+                                        {selectedSkills.length > 0 && (
+                                            <div className="flex flex-wrap gap-2 mt-2">
+                                                {selectedSkills.map((skill) => (
+                                                    <Badge key={skill} variant="secondary">
+                                                        {skill}
+                                                    </Badge>
+                                                ))}
+                                            </div>
+                                        )}
+                                        <FormDescription>Select the key skills freelancers need for this project</FormDescription>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
 
-            <div className="flex justify-end gap-4">
-                <Button type="button" variant="outline">
-                    Save as Draft
-                </Button>
-                <Button type="submit" disabled={isSubmitting}>
-                    {isSubmitting ? "Creating Project..." : "Create Project"}
-                </Button>
-            </div>
-        </form>
+                            <FormField
+                                control={form.control}
+                                name="technologies"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Preferred Technologies</FormLabel>
+                                        <FormControl>
+                                            <MultipleSelector
+                                                value={field.value.map((tech) => ({ value: tech, label: tech }))}
+                                                onChange={(options) => field.onChange(options.map((option) => option.value))}
+                                                defaultOptions={technologiesOptions}
+                                                placeholder="Select preferred technologies"
+                                                emptyIndicator={
+                                                    <p className="text-center text-sm text-muted-foreground">No technologies found</p>
+                                                }
+                                                commandProps={{
+                                                    label: "Select technologies",
+                                                }}
+                                            />
+                                        </FormControl>
+                                        <FormDescription>Specify any particular frameworks, tools, or technologies</FormDescription>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+
+                            <FormField
+                                control={form.control}
+                                name="experienceLevel"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Required Experience Level *</FormLabel>
+                                        <Select onValueChange={field.onChange} value={field.value}>
+                                            <FormControl>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Select experience level" />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                <SelectItem value="BEGINNER">
+                                                    <div className="flex flex-col">
+                                                        <span>Beginner</span>
+                                                        <span className="text-xs text-muted-foreground">Entry level, learning projects</span>
+                                                    </div>
+                                                </SelectItem>
+                                                <SelectItem value="INTERMEDIATE">
+                                                    <div className="flex flex-col">
+                                                        <span>Intermediate</span>
+                                                        <span className="text-xs text-muted-foreground">Some experience, standard projects</span>
+                                                    </div>
+                                                </SelectItem>
+                                                <SelectItem value="ADVANCED">
+                                                    <div className="flex flex-col">
+                                                        <span>Advanced</span>
+                                                        <span className="text-xs text-muted-foreground">Expert level, complex projects</span>
+                                                    </div>
+                                                </SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </CardContent>
+                    </Card>
+
+                    {/* Additional Options */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Additional Options</CardTitle>
+                            <CardDescription>Add tags and special requirements for your project</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                            <FormField
+                                control={form.control}
+                                name="tags"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Project Tags</FormLabel>
+                                        <FormControl>
+                                            <MultipleSelector
+                                                value={field.value.map((tag) => ({ value: tag, label: tag }))}
+                                                onChange={(options) => field.onChange(options.map((option) => option.value))}
+                                                defaultOptions={tagsOptions}
+                                                placeholder="Select project tags"
+                                                emptyIndicator={<p className="text-center text-sm text-muted-foreground">No tags found</p>}
+                                                commandProps={{
+                                                    label: "Select tags",
+                                                }}
+                                            />
+                                        </FormControl>
+                                        {selectedTags.length > 0 && (
+                                            <div className="flex flex-wrap gap-2 mt-2">
+                                                {selectedTags.map((tag) => (
+                                                    <Badge key={tag} variant="outline">
+                                                        {tag}
+                                                    </Badge>
+                                                ))}
+                                            </div>
+                                        )}
+                                        <FormDescription>Tags help categorize and make your project more discoverable</FormDescription>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+
+                            <FormField
+                                control={form.control}
+                                name="isUrgent"
+                                render={({ field }) => (
+                                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                                        <FormControl>
+                                            <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                                        </FormControl>
+                                        <div className="space-y-1 leading-none">
+                                            <FormLabel className="flex items-center gap-2">
+                                                <Zap className="h-4 w-4 text-orange-500" />
+                                                Mark as Urgent
+                                            </FormLabel>
+                                            <FormDescription>
+                                                Urgent projects get priority visibility and attract faster responses
+                                            </FormDescription>
+                                        </div>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </CardContent>
+                    </Card>
+
+                    <Separator />
+
+                    <div className="flex justify-end space-x-4">
+                        <Button type="button" variant="outline" onClick={() => router.back()} disabled={isPending}>
+                            Cancel
+                        </Button>
+                        <Button type="submit" disabled={isPending} className="min-w-32">
+                            {isPending ? (
+                                <div className="flex items-center gap-2">
+                                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                                    Creating...
+                                </div>
+                            ) : (
+                                "Create Project"
+                            )}
+                        </Button>
+                    </div>
+                </form>
+            </Form>
+        </div>
     )
 }

@@ -1,6 +1,4 @@
 "use client"
-
-import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -20,6 +18,7 @@ import {
     Award,
 } from "lucide-react"
 import { toggleProjectFavorite } from "@/app/[locale]/projects/actions"
+import { useState } from "react"
 
 interface ProjectDetailPageProps {
     project: {
@@ -132,21 +131,6 @@ export function ProjectDetailPage({ project }: ProjectDetailPageProps) {
                                 </div>
                             </div>
                         </div>
-                        <div className="flex gap-2">
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={handleFavorite}
-                                disabled={isLoading}
-                                className="flex items-center gap-2 bg-transparent"
-                            >
-                                <Heart className={`w-4 h-4 ${isFavorited ? "fill-current text-red-500" : ""}`} />
-                                {isFavorited ? "Favorited" : "Favorite"}
-                            </Button>
-                            <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90">
-                                Send Proposal
-                            </Button>
-                        </div>
                     </div>
                 </div>
 
@@ -237,7 +221,6 @@ export function ProjectDetailPage({ project }: ProjectDetailPageProps) {
                     </div>
 
                     <div className="space-y-6">
-
                         <Card>
                             <CardHeader>
                                 <CardTitle>About the Client</CardTitle>
@@ -248,10 +231,10 @@ export function ProjectDetailPage({ project }: ProjectDetailPageProps) {
                                         <Avatar className="w-12 h-12">
                                             <AvatarImage src={project.user.picture || "/placeholder.svg"} alt={project.user.name} />
                                             <AvatarFallback>
-                                                {project.user.name
+                                                {project.user.name ? project.user.name
                                                     .split(" ")
                                                     .map((n) => n[0])
-                                                    .join("")}
+                                                    .join("") : "E"}
                                             </AvatarFallback>
                                         </Avatar>
                                         <div>

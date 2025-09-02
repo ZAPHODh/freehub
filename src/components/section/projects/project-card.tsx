@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "../../ui/avatar"
 import { Heart, Eye, MessageSquare, Clock, MapPin } from "lucide-react"
 import { useState } from "react"
 import { toggleProjectFavorite } from "@/app/[locale]/projects/actions"
+import { useScopedI18n } from "@/locales/client"
 
 
 interface Project {
@@ -42,6 +43,9 @@ interface ProjectCardProps {
 }
 
 export function ProjectCard({ project, viewMode }: ProjectCardProps) {
+    const scopedT = useScopedI18n('projects.card')
+    const scopedBadges = useScopedI18n('projects.detail.badges')
+    const scopedReviews = useScopedI18n('projects.detail.client')
     const [isFavorited, setIsFavorited] = useState(false)
     const [isToggling, setIsToggling] = useState(false)
 
@@ -66,11 +70,11 @@ export function ProjectCard({ project, viewMode }: ProjectCardProps) {
         const now = new Date()
         const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60))
 
-        if (diffInHours < 1) return "Just posted"
-        if (diffInHours < 24) return `${diffInHours}h ago`
+        if (diffInHours < 1) return scopedT('timeAgo.justPosted')
+        if (diffInHours < 24) return `${diffInHours}${scopedT('timeAgo.hoursAgo')}`
         const diffInDays = Math.floor(diffInHours / 24)
-        if (diffInDays < 7) return `${diffInDays}d ago`
-        return `${Math.floor(diffInDays / 7)}w ago`
+        if (diffInDays < 7) return `${diffInDays}${scopedT('timeAgo.daysAgo')}`
+        return `${Math.floor(diffInDays / 7)}${scopedT('timeAgo.weeksAgo')}`
     }
 
     if (viewMode === "list") {
@@ -84,9 +88,9 @@ export function ProjectCard({ project, viewMode }: ProjectCardProps) {
                                     <div className="flex-1">
                                         <div className="flex items-center gap-2 mb-2">
                                             {project.isFeatured && (
-                                                <Badge className="bg-amber-100 text-amber-800 border-amber-200">Featured</Badge>
+                                                <Badge className="bg-amber-100 text-amber-800 border-amber-200">{scopedBadges('featured')}</Badge>
                                             )}
-                                            {project.isUrgent && <Badge variant="destructive">Urgent</Badge>}
+                                            {project.isUrgent && <Badge variant="destructive">{scopedBadges('urgent')}</Badge>}
                                             <Badge variant="outline" className="text-emerald-700 border-emerald-200">
                                                 {project.category}
                                             </Badge>
@@ -113,7 +117,7 @@ export function ProjectCard({ project, viewMode }: ProjectCardProps) {
                                     ))}
                                     {project.skillsRequired.length > 4 && (
                                         <Badge variant="secondary" className="text-xs">
-                                            +{project.skillsRequired.length - 4} more
+                                            +{project.skillsRequired.length - 4} ${scopedBadges('more')}
                                         </Badge>
                                     )}
                                 </div>
@@ -121,11 +125,11 @@ export function ProjectCard({ project, viewMode }: ProjectCardProps) {
                                 <div className="flex items-center gap-4 text-sm">
                                     <div className="flex items-center gap-1">
                                         <MessageSquare className="h-4 w-4" />
-                                        <span>{project.proposals} proposals</span>
+                                        <span>{project.proposals} {scopedT('stats.proposals')}</span>
                                     </div>
                                     <div className="flex items-center gap-1">
                                         <Eye className="h-4 w-4" />
-                                        <span>{project.views} views</span>
+                                        <span>{project.views} {scopedT('stats.views')}</span>
                                     </div>
                                     <div className="flex items-center gap-1">
                                         <Clock className="h-4 w-4" />
@@ -137,7 +141,7 @@ export function ProjectCard({ project, viewMode }: ProjectCardProps) {
                             <div className="lg:w-64 flex-shrink-0">
                                 <div className="text-right mb-4">
                                     <div className="text-2xl font-bold text-emerald-600 mb-1">{project.budget}</div>
-                                    <div className="text-sm">Est. {project.estimatedDuration}</div>
+                                    <div className="text-sm">{scopedT('estimated')}{project.estimatedDuration}</div>
                                 </div>
 
                                 <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
@@ -154,7 +158,7 @@ export function ProjectCard({ project, viewMode }: ProjectCardProps) {
                                         {project.user.clientProfile && (
                                             <div className="text-xs">
                                                 ⭐ {project.user.clientProfile.averageRating} ({project.user.clientProfile.totalReviews}{" "}
-                                                reviews)
+                                                ){scopedReviews('reviews')}
                                             </div>
                                         )}
                                     </div>
@@ -173,8 +177,8 @@ export function ProjectCard({ project, viewMode }: ProjectCardProps) {
                 <CardHeader className="pb-3">
                     <div className="flex items-start justify-between mb-2">
                         <div className="flex flex-wrap gap-2">
-                            {project.isFeatured && <Badge className="">Featured</Badge>}
-                            {project.isUrgent && <Badge variant="destructive">Urgent</Badge>}
+                            {project.isFeatured && <Badge className="">{scopedBadges('featured')}</Badge>}
+                            {project.isUrgent && <Badge variant="destructive">{scopedBadges('urgent')}</Badge>}
                         </div>
                         <Button
                             variant="ghost"
@@ -211,7 +215,7 @@ export function ProjectCard({ project, viewMode }: ProjectCardProps) {
                     </div>
 
                     <div className="text-xl font-bold mb-1">{project.budget}</div>
-                    <div className="text-sm  mb-4">Est. {project.estimatedDuration}</div>
+                    <div className="text-sm  mb-4">{scopedT('estimated')} {project.estimatedDuration}</div>
 
                     <div className="flex items-center justify-between text-sm mb-4">
                         <div className="flex items-center gap-1">
@@ -233,7 +237,7 @@ export function ProjectCard({ project, viewMode }: ProjectCardProps) {
                     <div className="flex items-center gap-3 w-full p-3 bg-slate-50 rounded-lg">
                         <Avatar className="h-8 w-8">
                             <AvatarImage src={project.user.picture || "/placeholder.svg"} alt={project.user.name} />
-                            <AvatarFallback>{project.user.name.charAt(0)}</AvatarFallback>
+                            <AvatarFallback>{project.user.name.charAt(0) || 'F'}</AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0">
                             <div className="font-medium text-slate-900 text-sm truncate">{project.user.name}</div>

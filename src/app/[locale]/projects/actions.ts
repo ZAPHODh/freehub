@@ -7,7 +7,7 @@ import { prisma } from "@/lib/server/db"
 import { z } from "zod"
 import type { ExperienceLevel, BudgetType, ProjectStatus } from "@prisma/client"
 import { generateUniqueSlug } from "@/lib/utils"
-import { createProjectSchema } from "@/lib/schemas/project"
+import { createProjectSchema } from "@/lib/zod/project"
 
 
 
@@ -175,19 +175,13 @@ export async function getProjects(filters?: {
 
             if (filters.minBudget !== undefined) {
                 where.AND.push({
-                    OR: [
-                        { minBudget: { gte: filters.minBudget } },
-                        { maxBudget: { gte: filters.minBudget } },
-                    ]
+                    OR: [{ minBudget: { gte: filters.minBudget } }, { maxBudget: { gte: filters.minBudget } }],
                 })
             }
 
             if (filters.maxBudget !== undefined) {
                 where.AND.push({
-                    OR: [
-                        { maxBudget: { lte: filters.maxBudget } },
-                        { minBudget: { lte: filters.maxBudget } },
-                    ]
+                    OR: [{ maxBudget: { lte: filters.maxBudget } }, { minBudget: { lte: filters.maxBudget } }],
                 })
             }
         }
@@ -236,19 +230,33 @@ export async function getProjects(filters?: {
                         },
                     },
                 },
-                orderBy: [
-                    { isFeatured: "desc" },
-                    { isUrgent: "desc" },
-                    { createdAt: "desc" },
-                ],
+                orderBy: [{ isFeatured: "desc" }, { isUrgent: "desc" }, { createdAt: "desc" }],
                 skip,
                 take: limit,
             }),
             prisma.project.count({ where }),
         ])
 
+        const serializedProjects = projects.map((project) => ({
+            ...project,
+            budget: project.budget ? Number(project.budget) : null,
+            minBudget: project.minBudget ? Number(project.minBudget) : null,
+            maxBudget: project.maxBudget ? Number(project.maxBudget) : null,
+            user: {
+                ...project.user,
+                clientProfile: project.user.clientProfile
+                    ? {
+                        ...project.user.clientProfile,
+                        averageRating: project.user.clientProfile.averageRating
+                            ? Number(project.user.clientProfile.averageRating)
+                            : null,
+                    }
+                    : null,
+            },
+        }))
+
         return {
-            projects,
+            projects: serializedProjects,
             pagination: {
                 page,
                 limit,
@@ -266,10 +274,7 @@ export async function getProjectById(id: string) {
     try {
         const project = await prisma.project.findFirst({
             where: {
-                OR: [
-                    { id },
-                    { slug: id }
-                ]
+                OR: [{ id }, { slug: id }],
             },
             include: {
                 user: {
@@ -336,7 +341,41 @@ export async function getProjectById(id: string) {
             data: { views: { increment: 1 } },
         })
 
-        return project
+        return {
+            ...project,
+            budget: project.budget ? Number(project.budget) : null,
+            minBudget: project.minBudget ? Number(project.minBudget) : null,
+            maxBudget: project.maxBudget ? Number(project.maxBudget) : null,
+            user: {
+                ...project.user,
+                clientProfile: project.user.clientProfile
+                    ? {
+                        ...project.user.clientProfile,
+                        totalSpent: project.user.clientProfile.totalSpent ? Number(project.user.clientProfile.totalSpent) : null,
+                        averageRating: project.user.clientProfile.averageRating
+                            ? Number(project.user.clientProfile.averageRating)
+                            : null,
+                    }
+                    : null,
+            },
+            projectProposals: project.projectProposals.map((proposal) => ({
+                ...proposal,
+                freelancer: {
+                    ...proposal.freelancer,
+                    freelancerProfile: proposal.freelancer.freelancerProfile
+                        ? {
+                            ...proposal.freelancer.freelancerProfile,
+                            hourlyRate: proposal.freelancer.freelancerProfile.hourlyRate
+                                ? Number(proposal.freelancer.freelancerProfile.hourlyRate)
+                                : null,
+                            averageRating: proposal.freelancer.freelancerProfile.averageRating
+                                ? Number(proposal.freelancer.freelancerProfile.averageRating)
+                                : null,
+                        }
+                        : null,
+                },
+            })),
+        }
     } catch (error) {
         console.error("Error fetching project:", error)
         throw new Error("Failed to fetch project")
